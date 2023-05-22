@@ -1,0 +1,17 @@
+
+```{r}
+# import libraries
+library("readxl")
+```
+
+
+#### Load Data
+```{r}
+df <- read_excel("dpi2012.xls")
+#View(df)
+```
+
+```{r}
+colnames(df)
+```
+
