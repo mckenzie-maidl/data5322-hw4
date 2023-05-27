@@ -5,13 +5,58 @@ library("readxl")
 ```
 
 
-#### Load Data
+### Data
 ```{r}
-df <- read_excel("dpi2012.xls")
-#View(df)
+df <- read_excel("")
+View(df)
 ```
 
 ```{r}
-colnames(df)
+# data cleaning
 ```
 
+
+### Unsupervised Learning: PCA
+```{r}
+# get variance of each column (2)
+apply(df, 2, var)
+```
+
+```{r}
+# perform PCA (scale the data)
+pr.out <- prcomp(df, scale = TRUE)
+```
+
+```{r}
+# get loadings of each principal component
+pr.out$rotation
+```
+
+```{r}
+# plot the first two principal components (arrows scaled to represent loadings)
+biplot(pr.out, scale = 0)
+```
+
+```{r}
+pr.var <- pr.out$sdev^2     # variance explained by each principal component
+pve <- pr.var / sum(pr.var) # proportion of total variance explained by each principal component
+
+pr.var
+pve
+
+# plot these
+par(mfrow = c(1, 2))
+plot(pve, xlab = "Principal Component", ylab = "Proportion", ylim = c(0, 1), type = "b")
+plot(cumsum(pve), xlab = "Principal Component", ylab = "Cumulative Proportion", ylim = c(0, 1), type = "b")
+mtext("Variance Explained", side = 3, line = -1, outer = TRUE)
+```
+
+
+### Unsupervised Learning: Clustering
+
+#### K-Means
+
+#### Hierarchical
+
+
+### Supervised Learning: ADD
