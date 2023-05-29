@@ -3,7 +3,7 @@ library(readxl)
 library(abind)
 
 #Get a list of all the sheet names
-sheets <- excel_sheets("001_Main SPEED Dataset 2015.xls")
+sheets <- excel_sheets("001_Main SPEED Dataset 2015.xlsx")
 
 #How many sheets there are total
 n <- length(sheets)
@@ -20,11 +20,11 @@ for (i in 4:n){
 #Rename columns
 colnames(data1980) <- sheets[3:n]
 
-#save the data
-save(data1980, file = 'data1980.Rdata')
-
 #add in country and region  
 data1980 <- data.frame(read_excel("001_Main SPEED Dataset 2015.xls", sheet = 3, range = cell_cols("A:B"))[1:147,], data1980)
+
+#save the data
+save(data1980, file = 'data1980.Rdata')
 
 #Create the 2012 data frame using the first data sheet
 data2012 <- read_excel("001_Main SPEED Dataset 2015.xls", sheet = 3, range = cell_cols("AK"))[1:147,]

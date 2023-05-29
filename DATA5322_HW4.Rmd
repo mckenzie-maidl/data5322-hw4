@@ -1,18 +1,18 @@
 
 ```{r}
 # import libraries
-library("readxl")
 ```
 
 
 ### Data
 ```{r}
-df <- read_excel("")
-View(df)
+load('Data/data1980.RData')
+load('Data/data2012.RData')
 ```
 
 ```{r}
-# data cleaning
+View(data1980)
+View(data2012)
 ```
 
 
