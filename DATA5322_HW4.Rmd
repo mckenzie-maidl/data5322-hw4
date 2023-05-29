@@ -1,6 +1,7 @@
 
 ```{r}
 # import libraries
+library("tidyr")
 ```
 
 
@@ -8,12 +9,45 @@
 ```{r}
 load('Data/data1980.RData')
 load('Data/data2012.RData')
-```
 
-```{r}
 View(data1980)
 View(data2012)
 ```
+
+Data Cleaning
+
+1980
+```{r}
+# remove columns that are mostly null
+df1980 <- subset(data1980,  select = -c(com_ppp, com_us, gdpcom_ppp, popcom_ppp, totcom_ppp, transp_ppp, transp_us, gdptransp_ppp, 
+                                        poptransp_ppp, tottransp_ppp, mining_ppp, mining_us, gdpmining_ppp,popmining_ppp, 
+                                        totmining_ppp, fuel_ppp, fuel_us, gdpfuel_ppp, gdpmining_ppp, popfuel_ppp, totfuel_ppp))
+
+# remove rows with nulls
+df1980 <- na.omit(df1980)
+
+#View(df1980)
+```
+
+2012
+```{r}
+# remove columns that are mostly null
+df2012 <- subset(data2012,  select = -c(com_ppp, com_us, gdpcom_ppp, popcom_ppp, totcom_ppp, transp_ppp, transp_us, gdptransp_ppp, 
+                                        poptransp_ppp, tottransp_ppp, mining_ppp, mining_us, gdpmining_ppp,popmining_ppp, 
+                                        totmining_ppp, fuel_ppp, fuel_us, gdpfuel_ppp, gdpmining_ppp, popfuel_ppp, totfuel_ppp))
+
+# remove rows with nulls
+df2012 <- na.omit(df2012)
+
+View(df2012)
+```
+
+```{r}
+df1980$country
+
+df2012$country
+```
+
 
 
 ### Unsupervised Learning: PCA
