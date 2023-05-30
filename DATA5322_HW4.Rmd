@@ -2,87 +2,84 @@
 ```{r}
 # import libraries
 library("tidyr")
+library("dplyr")
 ```
 
 
 ### Data
 ```{r}
-load('Data/data1980.RData')
-load('Data/data2012.RData')
+load("Data/data1980.RData")
+load("Data/data2012.RData")
 
-View(data1980)
-View(data2012)
+#View(data1980)
+#View(data2012)
 ```
 
 Data Cleaning
-
-1980
 ```{r}
-# remove columns that are mostly null
-df1980 <- subset(data1980,  select = -c(com_ppp, com_us, gdpcom_ppp, popcom_ppp, totcom_ppp, transp_ppp, transp_us, gdptransp_ppp, 
-                                        poptransp_ppp, tottransp_ppp, mining_ppp, mining_us, gdpmining_ppp,popmining_ppp, 
-                                        totmining_ppp, fuel_ppp, fuel_us, gdpfuel_ppp, gdpmining_ppp, popfuel_ppp, totfuel_ppp))
+# remove columns that are mostly null (1980)
+cols <- c("com_ppp", "com_us", "gdpcom_ppp", "popcom_ppp", "totcom_ppp", 
+          "transp_ppp", "transp_us", "gdptransp_ppp", "poptransp_ppp", "tottransp_ppp", 
+          "mining_ppp", "mining_us", "gdpmining_ppp", "popmining_ppp", "totmining_ppp", 
+          "fuel_ppp", "fuel_us", "gdpfuel_ppp", "popfuel_ppp", "totfuel_ppp")
+
+df1980 <- data1980[, -which(names(data1980) %in% cols)]
+df2012 <- data2012[, -which(names(data2012) %in% cols)]
 
 # remove rows with nulls
 df1980 <- na.omit(df1980)
-
-#View(df1980)
-```
-
-2012
-```{r}
-# remove columns that are mostly null
-df2012 <- subset(data2012,  select = -c(com_ppp, com_us, gdpcom_ppp, popcom_ppp, totcom_ppp, transp_ppp, transp_us, gdptransp_ppp, 
-                                        poptransp_ppp, tottransp_ppp, mining_ppp, mining_us, gdpmining_ppp,popmining_ppp, 
-                                        totmining_ppp, fuel_ppp, fuel_us, gdpfuel_ppp, gdpmining_ppp, popfuel_ppp, totfuel_ppp))
-
-# remove rows with nulls
 df2012 <- na.omit(df2012)
 
-View(df2012)
+# remove countries not in both data frames
+df2012 <- df2012[df2012$country %in% df1980$country,]
+df1980 <- df1980[df1980$country %in% df2012$country,]
+
+# prep for analysis that requires only numeric cols
+df1980num <- df1980[, -which(names(df1980) %in% c("country", "region"))]
+df2012num <- df2012[, -which(names(df2012) %in% c("country", "region"))]
 ```
 
-```{r}
-df1980$country
-
-df2012$country
-```
-
+ONLY 33 COLS LEFT? IS THAT OKAY?
 
 
 ### Unsupervised Learning: PCA
+
+Function to perform PCA on each data set (1980 and 2012)
 ```{r}
-# get variance of each column (2)
-apply(df, 2, var)
+perform_pca <- function(df) {
+  
+  # get variance of each column (2)
+  print(data.frame(apply(df, 2, var)) %>% rename("var" = "apply.df..2..var."))
+  
+  # perform PCA (scale the data)
+  pr.out <- prcomp(df, scale = TRUE)
+  
+  # get loadings of each principal component
+  print(data.frame(pr.out$rotation))
+  
+  # plot the first two principal components (arrows scaled to represent loadings)
+  biplot(pr.out, scale = 0)
+  
+  # get variance explained by each principal component
+  pr.var <- pr.out$sdev^2     # variance
+  pve <- pr.var / sum(pr.var) # proportion of total variance
+  
+  # plot these
+  par(mfrow = c(1, 2))
+  plot(pve, xlab = "Principal Component", ylab = "Proportion", ylim = c(0, 1), type = "b")
+  plot(cumsum(pve), xlab = "Principal Component", ylab = "Cumulative Proportion", ylim = c(0, 1), type = "b")
+  mtext("Variance Explained", side = 3, line = -1, outer = TRUE)
+}
 ```
 
 ```{r}
-# perform PCA (scale the data)
-pr.out <- prcomp(df, scale = TRUE)
+# 1980 data
+perform_pca(df1980num)
 ```
 
 ```{r}
-# get loadings of each principal component
-pr.out$rotation
-```
-
-```{r}
-# plot the first two principal components (arrows scaled to represent loadings)
-biplot(pr.out, scale = 0)
-```
-
-```{r}
-pr.var <- pr.out$sdev^2     # variance explained by each principal component
-pve <- pr.var / sum(pr.var) # proportion of total variance explained by each principal component
-
-pr.var
-pve
-
-# plot these
-par(mfrow = c(1, 2))
-plot(pve, xlab = "Principal Component", ylab = "Proportion", ylim = c(0, 1), type = "b")
-plot(cumsum(pve), xlab = "Principal Component", ylab = "Cumulative Proportion", ylim = c(0, 1), type = "b")
-mtext("Variance Explained", side = 3, line = -1, outer = TRUE)
+# 2012 data
+perform_pca(df2012num)
 ```
 
 
