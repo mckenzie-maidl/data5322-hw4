@@ -39,7 +39,7 @@ df1980num <- df1980[, -which(names(df1980) %in% c("country", "region"))]
 df2012num <- df2012[, -which(names(df2012) %in% c("country", "region"))]
 ```
 
-ONLY 33 COLS LEFT? IS THAT OKAY?
+ONLY 33 ROWS LEFT? IS THAT OKAY?
 
 
 ### Unsupervised Learning: PCA
