@@ -1,55 +1,21 @@
 
+## Import Libraries
 ```{r}
-# import libraries
 library("tidyr")
 library("dplyr")
 ```
 
-
-### Data
+## Load Data
 ```{r}
 load("Data/data2000.RData")
 load("Data/data2010.RData")
 ```
 
-Data Cleaning
+## Unsupervised Learning: PCA
 ```{r}
-# remove columns
-cols <- c("ag_ppp", "ag_us", "aggdpag_ppp", "com_ppp", "com_us", "defense_ppp", "defense_us", "education_ppp", "education_us",
-          "fuel_ppp", "fuel_us", "health_ppp", "health_us", "mining_ppp", "mining_us", "other_ppp", "other_us", "popag_ppp",
-          "popcom_ppp", "popdefense_ppp", "popeducation_ppp", "popfuel_ppp", "pophealth_ppp", "popmining_ppp", "popother_ppp",
-          "popsp_ppp", "poptc_ppp", "poptotal_ppp", "poptransp_ppp", "sp_ppp", "sp_us", "tc_ppp", "tc_us", "totag_ppp", "total_ppp",
-          "total_us", "totcom_ppp", "totdefense_ppp", "toteducation_ppp", "totfuel_ppp", "tothealth_ppp", "totmining_ppp",
-          "totother_ppp", "totsp_ppp", "tottc_ppp", "tottransp_ppp", "transp_ppp", "transp_us", "gdpfuel_ppp", "gdpcom_ppp")
-df2000 <- data2000[, -which(names(data2000) %in% cols)]
-df2010 <- data2010[, -which(names(data2010) %in% cols)]
-```
-
-```{r}
-# remove rows with nulls
-df2000 <- na.omit(df2000)
-df2010 <- na.omit(df2010)
-
-# remove countries not in both data frames
-df2010 <- df2010[df2010$country %in% df2000$country,]
-df2000 <- df2000[df2000$country %in% df2010$country,]
-
-# prep for analysis that requires only numeric cols
-df2000num <- df2000[, -which(names(df2000) %in% c("country", "region"))]
-df2010num <- df2010[, -which(names(df2010) %in% c("country", "region"))]
-```
-
-```{r}
-# View data
-#View(df2000)
-#View(df2010)
-```
-
-### Unsupervised Learning: PCA
-
-Function to perform PCA on each data set (2000 and 2010)
-```{r}
+# Function to perform PCA on each data set (2000 and 2010)
 perform_pca <- function(df, year) {
+  
   # perform PCA (scale the data)
   pr.out <- prcomp(df, scale = TRUE)
   
@@ -81,12 +47,28 @@ perform_pca(df2000num, "2000")
 perform_pca(df2010num, "2010")
 ```
 
+## Unsupervised Learning: SVD
+```{r}
+# 2000
+dfscale00 <-  scale(df2000num) # scale data
+s00 <- svd(dfscale00)          # perform SVD
+data.frame(s00$v)              # loadings (same as PCA)
 
-### Unsupervised Learning: Clustering
+# 2010
+dfscale10 <-  scale(df2010num) # scale data
+s10 <- svd(dfscale10)          # perform SVD
+data.frame(s10$v)              # loadings (same as PCA)
 
-#### K-Means
+# first two singular vectors
+par(mfrow = c(1, 2))
+plot(s00$u[,1], s00$u[,2], col = as.factor(df2000$region), xlab = "First", ylab = "Second")
+plot(s10$u[,1], s10$u[,2], col = as.factor(df2010$region), xlab = "First", ylab = "Second")
+```
 
-#### Hierarchical
+## Unsupervised Learning: Clustering
 
+### K-Means
 
-### Supervised Learning: ADD
+### Hierarchical
+
+## Supervised Learning: Decision Trees

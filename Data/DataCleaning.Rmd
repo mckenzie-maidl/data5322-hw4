@@ -44,27 +44,27 @@ get_data <- function (yearcol){
 }
 ```
 
-## Get data for 2000
+### Get data for 2000
 ```{r}
 data2000 <- get_data('Y')
 ```
 
-## Get data for 2010
+### Get data for 2010
 ```{r}
 data2010 <- get_data('AI')
 ```
 
-## Remove nulls
+## Remove Columns
 ```{r}
-# columns that are mostly null (1980)
-cols <- c("ag_ppp", "ag_us", "aggdpag_ppp", "com_ppp", "com_us", "defense_ppp", "defense_us", "education_ppp", "education_us",
-          "fuel_ppp", "fuel_us", "health_ppp", "health_us", "mining_ppp", "mining_us", "other_ppp", "other_us", "popag_ppp",
-          "popcom_ppp", "popdefense_ppp", "popeducation_ppp", "popfuel_ppp", "pophealth_ppp", "popmining_ppp", "popother_ppp",
-          "popsp_ppp", "poptc_ppp", "poptotal_ppp", "poptransp_ppp", "sp_ppp", "sp_us", "tc_ppp", "tc_us", "totag_ppp", "total_ppp",
-          "total_us", "totcom_ppp", "totdefense_ppp", "toteducation_ppp", "totfuel_ppp", "tothealth_ppp", "totmining_ppp",
-          "totother_ppp", "totsp_ppp", "tottc_ppp", "tottransp_ppp", "transp_ppp", "transp_us", "gdpfuel_ppp", "gdpcom_ppp")
+cols <- c("ag_ppp", "ag_us", "aggdpag_ppp", "com_ppp", "com_us", "defense_ppp", "defense_us", "education_ppp", 
+          "education_us", "fuel_ppp", "fuel_us", "health_ppp", "health_us", "mining_ppp", "mining_us", "other_ppp",
+          "other_us", "popag_ppp", "popcom_ppp", "popdefense_ppp", "popeducation_ppp", "popfuel_ppp", "pophealth_ppp",
+          "popmining_ppp", "popother_ppp", "popsp_ppp", "poptc_ppp", "poptotal_ppp", "poptransp_ppp", "sp_ppp",
+          "sp_us", "tc_ppp", "tc_us", "totag_ppp", "total_ppp", "total_us", "totcom_ppp", "totdefense_ppp",
+          "toteducation_ppp", "totfuel_ppp", "tothealth_ppp", "totmining_ppp", "totother_ppp", "totsp_ppp", "tottc_ppp",
+          "tottransp_ppp", "transp_ppp", "transp_us", "gdpfuel_ppp", "gdpcom_ppp")
 
-#function to remove unwanted columns and omit nas
+#function to remove unwanted columns then omit nas
 remove_data <- function (df){
   df <- df[, -which(names(df) %in% cols)]
   df <- na.omit(df)
