@@ -49,7 +49,7 @@ df2010num <- df2010[, -which(names(df2010) %in% c("country", "region"))]
 
 Function to perform PCA on each data set (2000 and 2010)
 ```{r}
-perform_pca <- function(df) {
+perform_pca <- function(df, year) {
   # perform PCA (scale the data)
   pr.out <- prcomp(df, scale = TRUE)
   
@@ -67,18 +67,18 @@ perform_pca <- function(df) {
   par(mfrow = c(1, 2))
   plot(pve, xlab = "Principal Component", ylab = "Proportion", ylim = c(0, 1), type = "b")
   plot(cumsum(pve), xlab = "Principal Component", ylab = "Cumulative Proportion", ylim = c(0, 1), type = "b")
-  mtext("Variance Explained", side = 3, line = -1, outer = TRUE)
+  mtext(paste("Variance Explained", "-", year), side = 3, line = -1, outer = TRUE)
 }
 ```
 
 ```{r}
 # 2000 data
-perform_pca(df2000num)
+perform_pca(df2000num, "2000")
 ```
 
 ```{r}
 # 2010 data
-perform_pca(df2010num)
+perform_pca(df2010num, "2010")
 ```
 
 
