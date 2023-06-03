@@ -50,10 +50,6 @@ df2010num <- df2010[, -which(names(df2010) %in% c("country", "region"))]
 Function to perform PCA on each data set (2000 and 2010)
 ```{r}
 perform_pca <- function(df) {
-  
-  # get variance of each column (2)
-  print(data.frame(apply(df, 2, var)) %>% rename("var" = "apply.df..2..var."))
-  
   # perform PCA (scale the data)
   pr.out <- prcomp(df, scale = TRUE)
   
