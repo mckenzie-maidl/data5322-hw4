@@ -1,0 +1,93 @@
+---
+title: "Data Cleaning"
+author: "Anna Tsai"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(readxl)
+library(abind)
+```
+
+## Metadata
+Get a list of all the sheet names
+```{r}
+sheets <- excel_sheets("001_Main SPEED Dataset 2015.xlsx")
+```
+
+How many sheets there are total
+```{r}
+n <- length(sheets)
+```
+
+## Function to get data
+```{r}
+get_data <- function (yearcol){
+  #Initialize data frame with first sheet
+  df <- read_excel("001_Main SPEED Dataset 2015.xlsx", sheet = 3, range = cell_cols(yearcol))[1:147,]
+  
+  #Read in the rest of the data
+  for (i in 4:n){
+  currentsheet <- read_excel("001_Main SPEED Dataset 2015.xlsx", sheet = i, range = cell_cols(yearcol))[1:147,]
+  df <- data.frame(df, currentsheet)
+  }
+  
+  #Rename columns
+  colnames(df) <- sheets[3:n]
+  
+  #add in country and region  
+  df<- data.frame(read_excel("001_Main SPEED Dataset 2015.xlsx", sheet = 3, range = cell_cols("A:B"))[1:147,], df)
+  
+  return(df)
+}
+```
+
+## Get data for 2000
+```{r}
+data2000 <- get_data('Y')
+```
+
+## Get data for 2010
+```{r}
+data2010 <- get_data('AI')
+```
+
+## Remove nulls
+```{r}
+# columns that are mostly null (1980)
+cols <- c("ag_ppp", "ag_us", "aggdpag_ppp", "com_ppp", "com_us", "defense_ppp", "defense_us", "education_ppp", "education_us",
+          "fuel_ppp", "fuel_us", "health_ppp", "health_us", "mining_ppp", "mining_us", "other_ppp", "other_us", "popag_ppp",
+          "popcom_ppp", "popdefense_ppp", "popeducation_ppp", "popfuel_ppp", "pophealth_ppp", "popmining_ppp", "popother_ppp",
+          "popsp_ppp", "poptc_ppp", "poptotal_ppp", "poptransp_ppp", "sp_ppp", "sp_us", "tc_ppp", "tc_us", "totag_ppp", "total_ppp",
+          "total_us", "totcom_ppp", "totdefense_ppp", "toteducation_ppp", "totfuel_ppp", "tothealth_ppp", "totmining_ppp",
+          "totother_ppp", "totsp_ppp", "tottc_ppp", "tottransp_ppp", "transp_ppp", "transp_us", "gdpfuel_ppp", "gdpcom_ppp")
+
+#function to remove unwanted columns and omit nas
+remove_data <- function (df){
+  df <- df[, -which(names(df) %in% cols)]
+  df <- na.omit(df)
+  return(df)
+}
+```
+
+```{r}
+data2000 <- remove_data(data2000)
+data2010 <- remove_data(data2010)
+```
+
+## Remove countries not in both data frames
+```{r}
+data2000 <- data2000[data2000$country %in% data2010$country,]
+```
+
+```{r}
+data2010 <- data2010[data2010$country %in% data2000$country,]
+```
+
+#save the data
+```{r}
+save(data2000, file = 'data2010.Rdata')
+save(data2010, file = 'data2012.Rdata')
+```
