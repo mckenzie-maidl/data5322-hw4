@@ -8,43 +8,46 @@ library("dplyr")
 
 ### Data
 ```{r}
-load("Data/data1980.RData")
-load("Data/data2012.RData")
-
-#View(data1980)
-#View(data2012)
+load("Data/data2000.RData")
+load("Data/data2010.RData")
 ```
 
 Data Cleaning
 ```{r}
-# remove columns that are mostly null (1980)
-cols <- c("com_ppp", "com_us", "gdpcom_ppp", "popcom_ppp", "totcom_ppp", 
-          "transp_ppp", "transp_us", "gdptransp_ppp", "poptransp_ppp", "tottransp_ppp", 
-          "mining_ppp", "mining_us", "gdpmining_ppp", "popmining_ppp", "totmining_ppp", 
-          "fuel_ppp", "fuel_us", "gdpfuel_ppp", "popfuel_ppp", "totfuel_ppp")
-
-df1980 <- data1980[, -which(names(data1980) %in% cols)]
-df2012 <- data2012[, -which(names(data2012) %in% cols)]
-
-# remove rows with nulls
-df1980 <- na.omit(df1980)
-df2012 <- na.omit(df2012)
-
-# remove countries not in both data frames
-df2012 <- df2012[df2012$country %in% df1980$country,]
-df1980 <- df1980[df1980$country %in% df2012$country,]
-
-# prep for analysis that requires only numeric cols
-df1980num <- df1980[, -which(names(df1980) %in% c("country", "region"))]
-df2012num <- df2012[, -which(names(df2012) %in% c("country", "region"))]
+# remove columns
+cols <- c("ag_ppp", "ag_us", "aggdpag_ppp", "com_ppp", "com_us", "defense_ppp", "defense_us", "education_ppp", "education_us",
+          "fuel_ppp", "fuel_us", "health_ppp", "health_us", "mining_ppp", "mining_us", "other_ppp", "other_us", "popag_ppp",
+          "popcom_ppp", "popdefense_ppp", "popeducation_ppp", "popfuel_ppp", "pophealth_ppp", "popmining_ppp", "popother_ppp",
+          "popsp_ppp", "poptc_ppp", "poptotal_ppp", "poptransp_ppp", "sp_ppp", "sp_us", "tc_ppp", "tc_us", "totag_ppp", "total_ppp",
+          "total_us", "totcom_ppp", "totdefense_ppp", "toteducation_ppp", "totfuel_ppp", "tothealth_ppp", "totmining_ppp",
+          "totother_ppp", "totsp_ppp", "tottc_ppp", "tottransp_ppp", "transp_ppp", "transp_us", "gdpfuel_ppp", "gdpcom_ppp")
+df2000 <- data2000[, -which(names(data2000) %in% cols)]
+df2010 <- data2010[, -which(names(data2010) %in% cols)]
 ```
 
-ONLY 33 ROWS LEFT? IS THAT OKAY?
+```{r}
+# remove rows with nulls
+df2000 <- na.omit(df2000)
+df2010 <- na.omit(df2010)
 
+# remove countries not in both data frames
+df2010 <- df2010[df2010$country %in% df2000$country,]
+df2000 <- df2000[df2000$country %in% df2010$country,]
+
+# prep for analysis that requires only numeric cols
+df2000num <- df2000[, -which(names(df2000) %in% c("country", "region"))]
+df2010num <- df2010[, -which(names(df2010) %in% c("country", "region"))]
+```
+
+```{r}
+# View data
+#View(df2000)
+#View(df2010)
+```
 
 ### Unsupervised Learning: PCA
 
-Function to perform PCA on each data set (1980 and 2012)
+Function to perform PCA on each data set (2000 and 2010)
 ```{r}
 perform_pca <- function(df) {
   
@@ -73,13 +76,13 @@ perform_pca <- function(df) {
 ```
 
 ```{r}
-# 1980 data
-perform_pca(df1980num)
+# 2000 data
+perform_pca(df2000num)
 ```
 
 ```{r}
-# 2012 data
-perform_pca(df2012num)
+# 2010 data
+perform_pca(df2010num)
 ```
 
 
