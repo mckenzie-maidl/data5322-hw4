@@ -207,6 +207,12 @@ bestpred <- predict(bestmod, df2000.test, type = 'class')
 mean(bestpred == region2000.test)
 table(bestpred, region2000.test)
 ```
+
+```{r}
+countries <- data2000$country[-train]
+treelabs2000 <- data.frame(countries, bestpred, region2000.test)
+```
+
 ```{r}
 varImpPlot(bestmod)
 ```
@@ -310,16 +316,21 @@ errors4
 
 ```{r}
 set.seed(1)
-bestmod <- randomForest(region ~., data = df2000,
+bestmod <- randomForest(region ~., data = df2010,
                         subset= train, mtry = 8, ntree= 250, 
                         importance = TRUE)
 bestmod
 ```
 
 ```{r}
-bestpred <- predict(bestmod, df2000.test, type = 'class')
-mean(bestpred == region2000.test)
-table(bestpred, region2000.test)
+bestpred <- predict(bestmod, df2010.test, type = 'class')
+mean(bestpred == region2010.test)
+table(bestpred, region2010.test)
+```
+
+```{r}
+countries <- data2010$country[-train]
+treelabs2010 <- data.frame(countries, bestpred, region2010.test)
 ```
 
 ```{r}
