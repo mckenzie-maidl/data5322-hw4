@@ -88,6 +88,6 @@ data2010 <- data2010[data2010$country %in% data2000$country,]
 
 #save the data
 ```{r}
-save(data2000, file = 'data2010.Rdata')
-save(data2010, file = 'data2012.Rdata')
+save(data2000, file = 'data2000.Rdata')
+save(data2010, file = 'data2010.Rdata')
 ```

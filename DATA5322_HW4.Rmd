@@ -1,8 +1,16 @@
+---
+title: "Homework 4"
+author: "McKenzie Maidl, Samikshya Pandey, Anna Tsai"
+date: "`r Sys.Date()`"
+output: html_document
+---
 
 ## Import Libraries
 ```{r}
-library("tidyr")
-library("dplyr")
+library(tidyverse)
+library(dplyr)
+library(tree)
+library(randomForest)
 ```
 
 ## Load Data
@@ -12,6 +20,12 @@ load("Data/data2010.RData")
 ```
 
 ## Unsupervised Learning: PCA
+Remove non-numeric columns:
+```{r}
+df2000num <- subset(data2000, select = -c(country, region))
+df2010num <- subset(data2010, select = -c(country, region))
+```
+
 ```{r}
 # Function to perform PCA on each data set (2000 and 2010)
 perform_pca <- function(df, year) {
@@ -61,8 +75,8 @@ data.frame(s10$v)              # loadings (same as PCA)
 
 # first two singular vectors
 par(mfrow = c(1, 2))
-plot(s00$u[,1], s00$u[,2], col = as.factor(df2000$region), xlab = "First", ylab = "Second")
-plot(s10$u[,1], s10$u[,2], col = as.factor(df2010$region), xlab = "First", ylab = "Second")
+plot(s00$u[,1], s00$u[,2], col = as.factor(data2000$region), xlab = "First", ylab = "Second")
+plot(s10$u[,1], s10$u[,2], col = as.factor(data2010$region), xlab = "First", ylab = "Second")
 ```
 
 ## Unsupervised Learning: Clustering
@@ -72,3 +86,242 @@ plot(s10$u[,1], s10$u[,2], col = as.factor(df2010$region), xlab = "First", ylab 
 ### Hierarchical
 
 ## Supervised Learning: Decision Trees
+Predictor is region so remove country
+```{r}
+df2000 <- subset(data2000, select = -country)
+df2010 <- subset(data2010, select = -country)
+```
+
+Make region a factor
+```{r}
+df2000$region <- factor(data2000$region)
+df2010$region <- factor(data2010$region)
+```
+
+### 2000
+
+#### Basic tree
+```{r}
+set.seed(1)
+train <- sample(1:nrow(df2000), nrow(df2000)*0.6)
+df2000.test <- df2000[-train, ]
+region2000.test <- df2000$region[-train]
+```
+
+```{r}
+tree2000 <- tree(region ~ . - region , df2000, subset = train)
+summary(tree2000)
+```
+
+```{r}
+tree.pred <- predict(tree2000, df2000.test,
+    type = "class")
+mean(tree.pred == region2000.test)
+table(tree.pred, region2000.test)
+```
+Prediction accuracy of 59%, seems to be best at predicting Eurozone (or there are just more obs for eurozone).
+
+```{r}
+plot(tree2000)
+text(tree2000, pretty = 0)
+```
+#### Bagging
+```{r}
+bag2000 <- randomForest(region ~ . , data = df2000,
+    subset = train, mtry = 10, importance = TRUE)
+bag2000
+```
+
+```{r}
+varImpPlot(bag2000)
+```
+
+```{r}
+bag.pred <- predict(bag2000, df2000.test, type = 'class')
+mean(bag.pred == region2000.test)
+table(bag.pred, region2000.test)
+```
+
+
+#### Random Forest
+```{r}
+set.seed(1)
+mtry.errors<- c()
+for (i in 1:10){
+  mod <- randomForest(region ~ ., data = df2000,
+                        subset = train, mtry = i)
+  pred <- predict(mod, df2000.test, type = 'class')
+  mtry.errors[i] <- mean(pred == region2000.test)
+}
+```
+
+```{r}
+plot(mtry.errors)
+```
+
+2, 6, 7, 9 or 10 are the best number of trees. 10 is boosting so try 2, 3, 4 trees with different ntree?
+
+```{r}
+set.seed(1)
+tune <- function (m){
+  errors <- c()
+  ntree <- c(100, 250, 500)
+  n <- length(ntree)
+  for (i in 1:n){
+    mod <- randomForest(region ~ ., data = df2000,
+                        subset = train, mtry = m, ntrees = ntree[i])
+    pred <- predict(mod, df2000.test, type = 'class')
+    errors[i] <- mean(pred == region2000.test)
+    }
+  return(errors)
+}
+```
+
+```{r}
+errors2 <- tune(2)
+errors2
+```
+
+```{r}
+errors3 <- tune(3)
+errors3
+```
+
+```{r}
+errors4 <- tune(4)
+errors4
+```
+
+Not changing much but even if you made ntree something really big or something really large it's not changing much. 
+
+```{r}
+set.seed(1)
+bestmod <- randomForest(region ~., data = df2000,
+                        subset= train, mtry = 3, ntree= 250, 
+                        importance = TRUE)
+bestmod
+```
+
+```{r}
+bestpred <- predict(bestmod, df2000.test, type = 'class')
+mean(bestpred == region2000.test)
+table(bestpred, region2000.test)
+```
+```{r}
+varImpPlot(bestmod)
+```
+
+
+### 2010
+
+#### Basic tree
+```{r}
+set.seed(1)
+train <- sample(1:nrow(df2010), nrow(df2010)*0.6)
+df2010.test <- df2010[-train, ]
+region2010.test <- df2010$region[-train]
+```
+
+```{r}
+tree2010 <- tree(region ~ . - region , df2010, subset = train)
+summary(tree2010)
+```
+
+```{r}
+tree.pred <- predict(tree2010, df2010.test,
+    type = "class")
+mean(tree.pred == region2010.test)
+table(tree.pred, region2010.test)
+```
+Similar to 2000, different predictor variables seem important
+
+```{r}
+plot(tree2010)
+text(tree2010, pretty = 0)
+```
+
+#### Bagging
+```{r}
+bag2010 <- randomForest(region ~ . , data = df2010,
+    subset = train, mtry = 10, importance = TRUE)
+bag2010
+```
+
+```{r}
+varImpPlot(bag2010)
+```
+
+```{r}
+bag.pred <- predict(bag2010, df2010.test, type = 'class')
+mean(bag.pred == region2010.test)
+table(bag.pred, region2010.test)
+```
+
+Slightly better than the basic tree
+
+#### Random Forest
+```{r}
+set.seed(1)
+mtry.errors<- c()
+for (i in 1:10){
+  mod <- randomForest(region ~ ., data = df2010,
+                        subset = train, mtry = i)
+  pred <- predict(mod, df2010.test, type = 'class')
+  mtry.errors[i] <- mean(pred == region2010.test)
+}
+```
+
+```{r}
+plot(mtry.errors)
+```
+
+1, 7, 8, 9 or 10 are the best number of trees. 10 is boosting so try 7-9 trees with different ntree?
+
+```{r}
+set.seed(1)
+tune <- function (m){
+  errors <- c()
+  ntree <- c(100, 250, 500)
+  n <- length(ntree)
+  for (i in 1:n){
+    mod <- randomForest(region ~ ., data = df2010,
+                        subset = train, mtry = m, ntrees = ntree[i])
+    pred <- predict(mod, df2010.test, type = 'class')
+    errors[i] <- mean(pred == region2010.test)
+    }
+  return(errors)
+}
+```
+
+```{r}
+errors2 <- tune(7)
+errors2
+```
+
+```{r}
+errors3 <- tune(8)
+errors3
+```
+
+```{r}
+errors4 <- tune(9)
+errors4
+```
+
+```{r}
+set.seed(1)
+bestmod <- randomForest(region ~., data = df2000,
+                        subset= train, mtry = 8, ntree= 250, 
+                        importance = TRUE)
+bestmod
+```
+
+```{r}
+bestpred <- predict(bestmod, df2000.test, type = 'class')
+mean(bestpred == region2000.test)
+table(bestpred, region2000.test)
+```
+
+```{r}
+varImpPlot(bestmod)
+```

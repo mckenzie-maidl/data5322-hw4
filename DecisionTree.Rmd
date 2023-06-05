@@ -1,0 +1,163 @@
+---
+title: "Decision Trees"
+author: "Anna Tsai"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(dplyr)
+library(tree)
+library(randomForest)
+library(gbm)
+```
+
+```{r}
+load('Data/data2000.RData')
+load('Data/data2010.RData')
+```
+
+Predictor is region so remove country
+```{r}
+data2000 <- subset(data2000, select = -country)
+data2010 <- subset(data2010, select = -country)
+```
+
+Make region a factor
+```{r}
+data2000$region <- factor(data2000$region)
+data2010$region <- factor(data2010$region)
+```
+
+## 2000
+
+### Basic tree
+```{r}
+set.seed(1)
+train <- sample(1:nrow(data2000), nrow(data2000)*0.6) #dataframes have same number of rows
+data2000.test <- data2000[-train, ]
+region2000.test <- data2000$region[-train]
+```
+
+```{r}
+tree2000 <- tree(region ~ . - region , data2000, subset = train)
+summary(tree2000)
+```
+
+```{r}
+tree.pred <- predict(tree2000, data2000.test,
+    type = "class")
+table(tree.pred, region2000.test)
+```
+
+```{r}
+(1+10+2)/length(region2000.test)
+```
+
+Prediction accuracy of 59%, seems to be best at predicting Eurozone (or there are just more obs for eurozone).
+
+```{r}
+plot(tree2000)
+text(tree2000, pretty = 0)
+```
+
+### Bagging
+```{r}
+bag2000 <- randomForest(region ~ . , data = data2000,
+    subset = train, mtry = 10, importance = TRUE)
+bag2000
+```
+
+```{r}
+varImpPlot(bag2000)
+```
+
+```{r}
+bag.pred <- predict(bag2000, data2000.test, type = 'class')
+table(bag.pred, region2000.test)
+```
+
+```{r}
+(2+10+1+1)/length(region2000.test)
+```
+
+Slightly better than the basic tree
+
+### Random Forest
+```{r}
+rf2000 <- randomForest(region ~ ., data = data2000,
+    subset = train, mtry = 3, importance = TRUE)
+rf2000
+```
+
+```{r}
+rf.pred <- predict(rf2000, data2000.test, type = 'class')
+table(rf.pred, region2000.test)
+```
+
+## 2010
+
+### Basic tree
+```{r}
+set.seed(1)
+train <- sample(1:nrow(data2010), nrow(data2010)*0.6)
+data2010.test <- data2010[-train, ]
+region2010.test <- data2010$region[-train]
+```
+
+```{r}
+tree2010 <- tree(region ~ . - region , data2010, subset = train)
+summary(tree2010)
+```
+
+```{r}
+tree.pred <- predict(tree2010, data2010.test,
+    type = "class")
+table(tree.pred, region2010.test)
+```
+
+```{r}
+(1+8+1+2)/length(region2010.test)
+```
+
+Similar to 2000, different predictor variables seem important
+
+```{r}
+plot(tree2010)
+text(tree2010, pretty = 0)
+```
+
+### Bagging
+```{r}
+bag2010 <- randomForest(region ~ . , data = data2010,
+    subset = train, mtry = 10, importance = TRUE)
+bag2010
+```
+
+```{r}
+varImpPlot(bag2010)
+```
+
+```{r}
+bag.pred <- predict(bag2010, data2010.test, type = 'class')
+table(bag.pred, region2010.test)
+```
+
+```{r}
+(1+11+1+2)/length(region2000.test)
+```
+
+Slightly better than the basic tree
+
+### Random Forest
+```{r}
+rf2010 <- randomForest(region ~ ., data = data2010,
+    subset = train, mtry = 3, importance = TRUE)
+rf2010
+```
+
+```{r}
+rf.pred <- predict(rf2010, data2010.test, type = 'class')
+table(rf.pred, region2010.test)
+```
