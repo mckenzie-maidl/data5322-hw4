@@ -1,0 +1,649 @@
+---
+title: "Homework 4"
+author: "McKenzie Maidl, Samikshya Pandey, Anna Tsai"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+## Import Libraries
+```{r}
+library(tidyverse)
+library(dplyr)
+library(tree)
+library(randomForest)
+library(ggplot2)
+library(ggrepel)
+```
+
+## Load Data
+```{r}
+load("Data/data2000.RData")
+load("Data/data2010.RData")
+```
+
+## Unsupervised Learning: PCA
+Remove non-numeric columns:
+```{r}
+df2000num <- subset(data2000, select = -c(country, region))
+df2010num <- subset(data2010, select = -c(country, region))
+```
+
+```{r}
+# Function to perform PCA on each data set (2000 and 2010)
+perform_pca <- function(df, year) {
+  
+  # perform PCA (scale the data)
+  pr.out <- prcomp(df, scale = TRUE)
+  
+  # get loadings of each principal component
+  print(data.frame(pr.out$rotation))
+  
+  # plot the first two principal components (arrows scaled to represent loadings)
+  biplot(pr.out, scale = 0)
+  
+  # get variance explained by each principal component
+  pr.var <- pr.out$sdev^2     # variance
+  pve <- pr.var / sum(pr.var) # proportion of total variance
+  
+  # plot these
+  par(mfrow = c(1, 2))
+  plot(pve, xlab = "Principal Component", ylab = "Proportion", ylim = c(0, 1), type = "b")
+  plot(cumsum(pve), xlab = "Principal Component", ylab = "Cumulative Proportion", ylim = c(0, 1), type = "b")
+  mtext(paste("Variance Explained", "-", year), side = 3, line = -1, outer = TRUE)
+}
+```
+
+```{r}
+# 2000 data
+perform_pca(df2000num, "2000")
+```
+
+```{r}
+# 2010 data
+perform_pca(df2010num, "2010")
+```
+
+## Unsupervised Learning: SVD
+```{r}
+# 2000
+dfscale00 <-  scale(df2000num) # scale data
+s00 <- svd(dfscale00)          # perform SVD
+data.frame(s00$v)              # loadings (same as PCA)
+
+# 2010
+dfscale10 <-  scale(df2010num) # scale data
+s10 <- svd(dfscale10)          # perform SVD
+data.frame(s10$v)              # loadings (same as PCA)
+
+# first two singular vectors
+par(mfrow = c(1, 2))
+plot(s00$u[,1], s00$u[,2], col = as.factor(data2000$region), xlab = "First", ylab = "Second")
+plot(s10$u[,1], s10$u[,2], col = as.factor(data2010$region), xlab = "First", ylab = "Second")
+```
+
+###Clustering
+
+## K-means Clustering: 
+
+###2010 data 
+
+
+Wss means against k cluster to decide how many cluster to use for analysis
+
+```{r}
+set.seed(1)
+wss<- NULL
+for (i in 1:10){
+  fit = kmeans(df2010num,centers = i)
+  wss = c(wss, fit$tot.withinss)
+}
+plot(1:10, wss, type = "o", main = 'wss plot against number of cluster for 2010 data', xlab = "Number of clusters", ylab = "wss value")
+
+``` 
+
+Use 5 clusters for both as the wss is reasonable at that point before dropping off. Since wss will keep on dropping till each observation has its own cluster; 5 clusters seems a reasonable wss distance
+
+
+```{r}
+km_df2010num <- kmeans(df2010num, 5, nstart = 20) #iteration for initializing is 20
+
+plot(df2010num[, c("gdpdefense_ppp", "gdptransp_ppp")],
+     col = km_df2010num$cluster,
+     main = paste("k-means clustering 2010 data with k 5"),
+     xlab = "GDP defense", ylab = "GDP transportation")
+    #xlim = c(min(df2010$country), max(df2010$country)))
+```
+
+
+```{r}
+km_df2010num <- kmeans(df2010num, 5, nstart = 20) #iteration for initializing is 20
+
+plot(df2010num[, c("gdpeducation_ppp", "gdphealth_ppp")],
+     col = km_df2010num$cluster,
+     main = paste("k-means clustering 2010 dataset data with k 5"),
+     xlab = "GDP education", ylab = "GDP health")
+
+```
+
+```{r}
+#names(km_df2010num)
+``` 
+
+wss distance: 
+```{r}
+km_df2010num$tot.withinss
+```
+The within cluster distance is 2228.18. 
+
+
+```{r}
+#km_df2010num$centers
+```
+
+```{r}
+country_cluster2010 <- data.frame(country = df2010$country, cluster = km_df2010num$cluster)
+
+# Print the data frame
+print(country_cluster)
+``` 
+
+creating dataframe with country's name and cluster for regional comparision and see which countries fell into what cluster.
+
+```{r}
+country_cluster <- data.frame(country = df2010$country, cluster = km_df2010num$cluster)
+
+# Group the data frame by cluster and list the countries in each cluster
+grouped_countries <- country_cluster %>%
+  group_by(cluster) %>%
+  summarise(countries = paste(country, collapse = ", "))
+
+print(grouped_countries)
+```
+
+
+```{r}
+region_cluster <- data.frame(country = df2010$region, cluster = km_df2010num$cluster)
+
+# Group the data frame by cluster and list the countries in each cluster
+grouped_region <- region_cluster %>%
+  group_by(cluster) %>%
+  summarise(countries = paste(country, collapse = ", "))
+
+print(grouped_region)
+```
+
+
+```{r}
+km_df2010num <- kmeans(df2010num, 5, nstart = 20)
+
+# Create a data frame with country, region, and cluster columns
+country_region_cluster <- data.frame(country = df2010$country, region = df2010$region, cluster = km_df2010num$cluster)
+
+# Create a scatter plot
+ggplot(country_region_cluster, aes(x = factor(cluster), y = region, color = factor(cluster))) +
+  geom_point(size = 3) +
+  labs(x = "Cluster", y = "Region", title = "Clustered Countries by Region") +
+  scale_color_discrete(name = "Cluster")
+```
+
+```{r}
+country_region_cluster2010 <- data.frame(
+  country = df2010$country,
+  region = df2010$region,
+  cluster = km_df2010num$cluster
+)
+
+# Group the countries by cluster and region
+grouped_countries2010 <- country_region_cluster2010 %>%
+  group_by(cluster, region) %>%
+  summarise(countries = paste(country, collapse = ", "))
+
+
+ggplot(country_region_cluster2010, aes(x = cluster, y = region, color = factor(cluster))) +
+  geom_point(size = 3, alpha = 0.6) +
+  geom_text_repel(data = grouped_countries2010, aes(label = countries), size = 3, box.padding = 0.5, 
+                  point.padding = 0.3, force = 10, segment.alpha = 0.3, segment.size = 0.2) +
+  labs(x = "Cluster", y = "Region", title = "Clustered Countries by Region 2010") +
+  scale_color_discrete(name = "Cluster") +
+  theme_minimal() +
+  theme(plot.title = element_text(size = 16, face = "bold"),
+        axis.text = element_text(size = 12),
+        legend.position = "bottom")
+```
+
+## 2000:
+
+```{r}
+set.seed(1)
+wss<- NULL
+for (i in 1:10){
+  fit = kmeans(df2000num,centers = i)
+  wss = c(wss, fit$tot.withinss)
+}
+plot(1:10, wss, type = "o", main = 'wss plot against number of cluster for 2000 data', xlab = "Number of clusters", ylab = "wss value")
+
+```
+The wss seems fairly stabilized after cluster number 5, so choosing to make 5 clusters moving forward:  
+
+
+k cluster with 5 clusters and plotting to observe the relationship with other variables.
+
+```{r}
+km_df2000num <- kmeans(df2000num, 5, nstart = 20) #iteration for initializing is 20
+
+plot(df2000num[, c("gdpdefense_ppp", "gdptransp_ppp")],
+     col = km_df2000num$cluster,
+     main = paste("k-means clustering college data with k 5"),
+     xlab = "GDP defense", ylab = "GDP transportation")
+    #xlim = c(min(df2010$country), max(df2010$country)))
+```
+
+
+```{r}
+km_df2000num$tot.withinss
+```
+The within the cluster distance was 2281.72
+
+```{r}
+km_df2000num <- kmeans(df2000num, 5, nstart = 20) #iteration for initializing is 20
+
+plot(df2000num[, c("gdpeducation_ppp", "gdphealth_ppp")],
+     col = km_df2000num$cluster,
+     main = paste("k-means clustering college data with k 5"),
+     xlab = "GDP education", ylab = "GDP health")
+
+```
+
+```{r}
+country_cluster2000 <- data.frame(country = df2000$country, cluster = km_df2000num$cluster)
+
+# Print the data frame
+print(country_cluster2000)
+```
+
+```{r}
+country_region_cluster2000 <- data.frame(
+  country = df2000$country,
+  region = df2000$region,
+  cluster = km_df2000num$cluster
+)
+
+# Group the countries by cluster and region
+grouped_countries2000 <- country_region_cluster2000 %>%
+  group_by(cluster, region) %>%
+  summarise(countries = paste(country, collapse = ", "))
+
+library(ggrepel)
+ggplot(country_region_cluster2000, aes(x = cluster, y = region, color = factor(cluster))) +
+  geom_point(size = 3, alpha = 0.6) +
+  geom_text_repel(data = grouped_countries2010, aes(label = countries), size = 3, box.padding = 0.5, 
+                  point.padding = 0.3, force = 10, segment.alpha = 0.3, segment.size = 0.2) +
+  labs(x = "Cluster", y = "Region", title = "Clustered Countries by Region 2010") +
+  scale_color_discrete(name = "Cluster") +
+  theme_minimal() +
+  theme(plot.title = element_text(size = 16, face = "bold"),
+        axis.text = element_text(size = 12),
+        legend.position = "bottom")
+```
+
+
+```{r}
+#cluster_split2000 <- split(country_region_cluster2000$country, country_cluster$cluster)
+
+# Tabulate countries for each cluster using lapply
+#tabulated_clusters2000 <- lapply(cluster_split2000, table)
+
+# Print the tabulated result for each cluster
+#for (i in seq_along(tabulated_clusters2000)) {
+  #cluster_number <- names(tabulated_clusters2000)[i]
+ # cat("Cluster", cluster_number, ":\n")
+ # print(tabulated_clusters[[i]])
+ # cat("\n")
+ # cluster_filename <- paste0("cluster_", cluster_number, ".csv")
+#  write.csv(cluster_table, file = cluster_filename, row.names = TRUE)
+
+```
+
+
+### Hieratchical Clustering 
+
+## 2010 htree:
+
+```{r}
+hcluster <- function(df){
+  
+    df_complete <- hclust(dist(df), method = "complete")
+    df_average <- hclust(dist(df), method = "average")
+    df_single <- hclust(dist(df), method = "single")
+    df_centroid <- hclust(dist(df), method = "centroid")
+    
+    plot(df_complete, main = "Complete Linkage",
+    xlab = "", sub = "", cex = .2)
+    plot(df_average, main = "Average Linkage",
+    xlab = "", sub = "", cex = .4)
+  plot(df_single, main = "Single Linkage",
+    xlab = "", sub = "", cex = .4)
+  plot(df_centroid, main = "Centroid Linkage",
+    xlab = "", sub = "", cex = .4)
+}
+
+
+```
+
+
+```{r}
+hcluster(df2010num)   #call the function
+```
+
+Among all options for the htree, complete linkage had the most even split so using complete linkage with 5 as the cut, we have 4 clusters for 2010 data. 
+
+## htree for 2000 dataset
+```{r}
+hcluster(df2000num)  #call the function
+```
+Compared to all graphs, complete works for both 2000 and 2010 datasets. 
+
+FOr both the average linkage with 4 clusters had the best and balanced cluster division. 
+
+## Print how many clusters there are and what are included in the cluster 
+
+2010 dataset 
+
+```{r}
+hcut_df2000 <- hclust(dist(df2000num), method = "complete")
+cluster_2000 <- cutree(hcut_df2000, 4)
+cluster_df <- data.frame(country = df2000$country, cluster = cluster_2000)
+
+for (i in unique(cluster_df$cluster)) {
+  cat("Cluster", i, ":\n")
+  countries_in_cluster <- cluster_df$country[cluster_df$cluster == i]
+  cat(paste(countries_in_cluster, collapse = ", "), "\n\n")
+  
+num_countries_in_cluster <- length(countries_in_cluster)
+  cat("Number of countries in Cluster", i, ":", num_countries_in_cluster, "\n\n")
+  
+}
+```
+
+```{r}
+hcut_df2010 <- hclust(dist(df2010num), method = "complete")
+cluster_2010 <- cutree(hcut_df2010, 4)
+cluster_df <- data.frame(country = df2010$country, cluster = cluster_2010)
+
+for (i in unique(cluster_df$cluster)) {
+  cat("Cluster", i, ":\n")
+  countries_in_cluster <- cluster_df$country[cluster_df$cluster == i]
+  cat(paste(countries_in_cluster, collapse = ", "), "\n\n")
+  num_countries_in_cluster <- length(countries_in_cluster)
+  cat("Number of countries in Cluster", i, ":", num_countries_in_cluster, "\n\n")
+}
+```
+
+
+### code for the theorotical section of clustering: 
+
+```{r}
+library(random)
+X <- matrix(runif(30), nrow = 10, ncol = 3)
+
+df_tree <- hclust(dist(X), method = "complete")
+plot(df_tree, main = "Complete Linkage",
+    xlab = "", sub = "", cex = .2)
+```
+
+
+
+
+## Supervised Learning: Decision Trees
+Predictor is region so remove country
+```{r}
+df2000 <- subset(data2000, select = -country)
+df2010 <- subset(data2010, select = -country)
+```
+
+Make region a factor
+```{r}
+df2000$region <- factor(data2000$region)
+df2010$region <- factor(data2010$region)
+```
+
+### 2000
+
+#### Basic tree
+```{r}
+set.seed(1)
+train <- sample(1:nrow(df2000), nrow(df2000)*0.6)
+df2000.test <- df2000[-train, ]
+region2000.test <- df2000$region[-train]
+```
+
+```{r}
+tree2000 <- tree(region ~ . - region , df2000, subset = train)
+summary(tree2000)
+```
+
+```{r}
+tree.pred <- predict(tree2000, df2000.test,
+    type = "class")
+mean(tree.pred == region2000.test)
+table(tree.pred, region2000.test)
+```
+Prediction accuracy of 59%, seems to be best at predicting Eurozone (or there are just more obs for eurozone).
+
+```{r}
+plot(tree2000)
+text(tree2000, pretty = 0)
+```
+#### Bagging
+```{r}
+bag2000 <- randomForest(region ~ . , data = df2000,
+    subset = train, mtry = 10, importance = TRUE)
+bag2000
+```
+
+```{r}
+varImpPlot(bag2000)
+```
+
+```{r}
+bag.pred <- predict(bag2000, df2000.test, type = 'class')
+mean(bag.pred == region2000.test)
+table(bag.pred, region2000.test)
+```
+
+
+#### Random Forest
+```{r}
+set.seed(1)
+mtry.errors<- c()
+for (i in 1:10){
+  mod <- randomForest(region ~ ., data = df2000,
+                        subset = train, mtry = i)
+  pred <- predict(mod, df2000.test, type = 'class')
+  mtry.errors[i] <- mean(pred == region2000.test)
+}
+```
+
+```{r}
+plot(mtry.errors)
+```
+
+2, 6, 7, 9 or 10 are the best number of trees. 10 is boosting so try 2, 3, 4 trees with different ntree?
+
+```{r}
+set.seed(1)
+tune <- function (m){
+  errors <- c()
+  ntree <- c(100, 250, 500)
+  n <- length(ntree)
+  for (i in 1:n){
+    mod <- randomForest(region ~ ., data = df2000,
+                        subset = train, mtry = m, ntrees = ntree[i])
+    pred <- predict(mod, df2000.test, type = 'class')
+    errors[i] <- mean(pred == region2000.test)
+    }
+  return(errors)
+}
+```
+
+```{r}
+errors2 <- tune(2)
+errors2
+```
+
+```{r}
+errors3 <- tune(3)
+errors3
+```
+
+```{r}
+errors4 <- tune(4)
+errors4
+```
+
+Not changing much but even if you made ntree something really big or something really large it's not changing much. 
+
+```{r}
+set.seed(1)
+bestmod <- randomForest(region ~., data = df2000,
+                        subset= train, mtry = 3, ntree= 250, 
+                        importance = TRUE)
+bestmod
+```
+
+```{r}
+bestpred <- predict(bestmod, df2000.test, type = 'class')
+mean(bestpred == region2000.test)
+table(bestpred, region2000.test)
+```
+
+```{r}
+countries <- data2000$country[-train]
+treelabs2000 <- data.frame(countries, bestpred, region2000.test)
+```
+
+```{r}
+varImpPlot(bestmod)
+```
+
+
+### 2010
+
+#### Basic tree
+```{r}
+set.seed(1)
+train <- sample(1:nrow(df2010), nrow(df2010)*0.6)
+df2010.test <- df2010[-train, ]
+region2010.test <- df2010$region[-train]
+```
+
+```{r}
+tree2010 <- tree(region ~ . - region , df2010, subset = train)
+summary(tree2010)
+```
+
+```{r}
+tree.pred <- predict(tree2010, df2010.test,
+    type = "class")
+mean(tree.pred == region2010.test)
+table(tree.pred, region2010.test)
+```
+Similar to 2000, different predictor variables seem important
+
+```{r}
+plot(tree2010)
+text(tree2010, pretty = 0)
+```
+
+#### Bagging
+```{r}
+bag2010 <- randomForest(region ~ . , data = df2010,
+    subset = train, mtry = 10, importance = TRUE)
+bag2010
+```
+
+```{r}
+varImpPlot(bag2010)
+```
+
+```{r}
+bag.pred <- predict(bag2010, df2010.test, type = 'class')
+mean(bag.pred == region2010.test)
+table(bag.pred, region2010.test)
+```
+
+Slightly better than the basic tree
+
+#### Random Forest
+```{r}
+set.seed(1)
+mtry.errors<- c()
+for (i in 1:10){
+  mod <- randomForest(region ~ ., data = df2010,
+                        subset = train, mtry = i)
+  pred <- predict(mod, df2010.test, type = 'class')
+  mtry.errors[i] <- mean(pred == region2010.test)
+}
+```
+
+```{r}
+plot(mtry.errors)
+```
+
+1, 7, 8, 9 or 10 are the best number of trees. 10 is boosting so try 7-9 trees with different ntree?
+
+```{r}
+set.seed(1)
+tune <- function (m){
+  errors <- c()
+  ntree <- c(100, 250, 500)
+  n <- length(ntree)
+  for (i in 1:n){
+    mod <- randomForest(region ~ ., data = df2010,
+                        subset = train, mtry = m, ntrees = ntree[i])
+    pred <- predict(mod, df2010.test, type = 'class')
+    errors[i] <- mean(pred == region2010.test)
+    }
+  return(errors)
+}
+```
+
+```{r}
+errors2 <- tune(7)
+errors2
+```
+
+```{r}
+errors3 <- tune(8)
+errors3
+```
+
+```{r}
+errors4 <- tune(9)
+errors4
+```
+
+```{r}
+set.seed(1)
+bestmod <- randomForest(region ~., data = df2010,
+                        subset= train, mtry = 8, ntree= 250, 
+                        importance = TRUE)
+bestmod
+```
+
+```{r}
+bestpred <- predict(bestmod, df2010.test, type = 'class')
+mean(bestpred == region2010.test)
+table(bestpred, region2010.test)
+```
+
+```{r}
+countries <- data2010$country[-train]
+treelabs2010 <- data.frame(countries, bestpred, region2010.test)
+```
+
+```{r}
+varImpPlot(bestmod)
+```
